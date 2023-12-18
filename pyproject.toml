@@ -29,6 +29,9 @@ dependencies = [
   "frequenz-api-common >= 0.5.0, < 0.6.0",
   "googleapis-common-protos >= 1.56.2, < 2",
   "grpcio >= 1.51.1, < 2",
+  "frequenz-client-base @ git+https://github.com/frequenz-floss/frequenz-client-base-python@v0.x.x",
+  "frequenz-channels == 1.0.0b2",
+  "numpy >= 1.24.2, < 2",
 ]
 dynamic = ["version"]
 
