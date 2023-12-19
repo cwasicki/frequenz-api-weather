@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import enum
 import logging
 from frequenz.api.weather import weather_pb2
-from frequenz.api.common.v1 import location_pb2
+from frequenz.api.common import location_pb2
 
 # Set up logging
 _logger = logging.getLogger(__name__)
