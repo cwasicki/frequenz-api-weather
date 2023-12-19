@@ -123,59 +123,6 @@ class Forecasts:
         locations: list[Location] | None = None,
         features: list[ForecastFeature] | None = None,
     ) -> np.ndarray:
-        """Convert a Forecast object to numpy array."""
-        num_times = len(self._forecasts_pb.location_forecasts[0].forecasts)
-        num_locations = len(self._forecasts_pb.location_forecasts)
-        num_features = len(
-            self._forecasts_pb.location_forecasts[0].forecasts[0].features
-        )
-
-        array = np.zeros((num_times, num_locations, num_features))
-
-        # iterate through all locations
-        for l_index, location_forecast in enumerate(
-            self._forecasts_pb.location_forecasts
-        ):
-            creation_ts = location_forecast.creation_ts.ToDatetime()
-
-            # check if location is in locations
-            if (
-                locations
-                and Location.from_pb(location_forecast.location) not in locations
-            ):
-                continue
-
-            # iterate through all forecasts (all times) for a location
-            for t_index, forecast in enumerate(location_forecast.forecasts):
-                validity_ts = forecast.valid_at_ts.ToDatetime()
-
-                # check if is in validity times
-                if validity_times and (validity_ts - creation_ts) in validity_times:
-                    continue
-
-                # iterate through all features for a forecast valid at a certain time for one location
-                for f_index, feature_forecast in enumerate(forecast.features):
-                    feature = ForecastFeature.from_pb(feature_forecast.feature)
-                    if features and feature not in features:
-                        continue
-
-                    array[t_index, l_index, f_index] = feature_forecast.value
-
-                if array[t_index, l_index, :].sum() == 0:
-                    _logger.warning(
-                        "Forecast at %s for location %s is empty. Skipping.",
-                        validity_ts,
-                        location_forecast.location,
-                    )
-
-        return array
-
-    def to_ndarray_vlf_refined(
-        self,
-        validity_times: list[dt.timedelta] | None = None,
-        locations: list[Location] | None = None,
-        features: list[ForecastFeature] | None = None,
-    ) -> np.ndarray:
         """Convert a Forecast object to numpy array and use NaN to mark irrelevant data."""
 
         # Check entry types
@@ -267,15 +214,27 @@ class Forecasts:
                 np.nan,
             )
 
+            array_l_index = 0
+
             for l_index in location_indexes:
+                array_t_index = 0
+
                 for t_index in validity_times_indexes:
+                    array_f_index = 0
+
                     for f_index in feature_indexes:
-                        array[t_index, l_index, f_index] = (
+
+                        array[array_t_index, array_l_index, array_f_index] = (
                             self._forecasts_pb.location_forecasts[l_index]
                             .forecasts[t_index]
                             .features[f_index]
                             .value
                         )
+                        array_f_index += 1
+
+                    array_t_index += 1
+
+                array_l_index += 1
 
             # Check if the array shape matches the number of filtered times, locations and features
             if array.shape[0] != len(validity_times_indexes):
