@@ -1,17 +1,15 @@
 """Test the types module."""
 
-from _pytest.logging import LogCaptureFixture
-
 from datetime import timedelta
-from google.protobuf.timestamp_pb2 import Timestamp
-from frequenz.api.weather import weather_pb2
-from frequenz.api.common.v1.location_pb2 import Location as LocationProto
-from frequenz.client.weather._types import (
-    ForecastFeature,
-    Location,
-    Forecasts,
-)
+
 import numpy as np
+from _pytest.logging import LogCaptureFixture
+from frequenz.api.common.v1.location_pb2 import Location as LocationProto
+from frequenz.api.weather import weather_pb2
+from frequenz.client.weather._types import ForecastFeature, Forecasts, Location
+from google.protobuf.timestamp_pb2 import Timestamp
+from pytest import fixture
+
 
 class TestForecastFeatureType:
     """Testing the ForecastFeature type."""
@@ -89,6 +87,84 @@ class TestLocation:
         assert result_location.country_code == original_location.country_code
 
 
+@fixture
+def forecastdata() -> (
+    tuple[weather_pb2.ReceiveLiveWeatherForecastResponse, int, int, int]
+):
+    """Create a example ReceiveLiveWeatherForecastResponse proto object.
+
+    Returns: tuple of example ReceiveLiveWeatherForecastResponse proto object,
+    number of times, number of locations, number of features
+    """
+    # Create a list of FeatureForecast objects (replace with actual FeatureForecast objects)
+    feature_forecasts_list = []
+    some_feature_values = [
+        weather_pb2.ForecastFeature.FORECAST_FEATURE_U_WIND_COMPONENT_100_METRE,
+        weather_pb2.ForecastFeature.FORECAST_FEATURE_V_WIND_COMPONENT_100_METRE,
+        weather_pb2.ForecastFeature.FORECAST_FEATURE_SURFACE_SOLAR_RADIATION_DOWNWARDS,
+    ]
+    some_float_values = [100, 200, 300]
+
+    for feature, value in zip(some_feature_values, some_float_values):
+        forecast = weather_pb2.LocationForecast.Forecasts.FeatureForecast(
+            feature=feature, value=value
+        )
+        feature_forecasts_list.append(forecast)
+
+    many_forecasts = []
+
+    # adding different valid_ts into valid_ts_list
+
+    valid_ts1 = Timestamp()
+    valid_ts1.FromJsonString("2024-01-01T01:00:00Z")
+
+    valid_ts2 = Timestamp()
+    valid_ts2.FromJsonString("2024-01-01T02:00:00Z")
+
+    valid_ts3 = Timestamp()
+    valid_ts3.FromJsonString("2024-01-01T03:00:00Z")
+
+    valid_ts_list = [valid_ts1, valid_ts2, valid_ts3]
+
+    # adding same forecast for different valid_ts into many_forecasts
+
+    for valid_ts in valid_ts_list:
+        full_features_forecasts = weather_pb2.LocationForecast.Forecasts(
+            valid_at_ts=valid_ts, features=feature_forecasts_list
+        )
+        many_forecasts.append(full_features_forecasts)
+
+    some_locations_forecasts = []
+
+    some_creation_ts = Timestamp()
+    some_creation_ts.FromJsonString("2024-01-01T00:00:00Z")
+
+    # adding different locations into locations_list
+    locations = [
+        LocationProto(latitude=42.0, longitude=18.0, country_code="US"),
+        LocationProto(latitude=43.0, longitude=19.0, country_code="CA"),
+    ]
+
+    for location in locations:
+        location_forecast = weather_pb2.LocationForecast(
+            forecasts=many_forecasts,
+            location=location,
+            creation_ts=some_creation_ts,
+        )
+        some_locations_forecasts.append(location_forecast)
+
+    # creating a ReceiveLiveWeatherForecastResponse proto object
+    forecasts_proto = weather_pb2.ReceiveLiveWeatherForecastResponse(
+        location_forecasts=some_locations_forecasts
+    )
+
+    num_times = 3
+    num_locations = 2
+    num_features = 3
+
+    return forecasts_proto, num_times, num_locations, num_features
+
+
 class TestForecasts:
     """Testing the Forecasts type.
 
@@ -100,123 +176,66 @@ class TestForecasts:
 
     """
 
-    def __init__(self) -> None:
-        """Initialize the test class."""
-        self.forecasts_proto = self.setup_method()
-        self.num_times = 3
-        self.num_locations = 2
-        self.num_features = 3
-
-    def setup_method(self) -> weather_pb2.ReceiveLiveWeatherForecastResponse:
-        """Create a example ReceiveLiveWeatherForecastResponse proto object.
-
-        Returns: ReceiveLiveWeatherForecastResponse proto object
-        """
-        # Create a list of FeatureForecast objects (replace with actual FeatureForecast objects)
-        feature_forecasts_list = []
-        some_feature_values = [
-            weather_pb2.ForecastFeature.FORECAST_FEATURE_U_WIND_COMPONENT_100_METRE,
-            weather_pb2.ForecastFeature.FORECAST_FEATURE_V_WIND_COMPONENT_100_METRE,
-            weather_pb2.ForecastFeature.FORECAST_FEATURE_SURFACE_SOLAR_RADIATION_DOWNWARDS,
-        ]
-        some_float_values = [100, 200, 300]
-
-        for feature, value in zip(some_feature_values, some_float_values):
-            forecast = weather_pb2.LocationForecast.Forecasts.FeatureForecast(
-                feature=feature, value=value
-            )
-            feature_forecasts_list.append(forecast)
-
-        many_forecasts = []
-
-        # adding different valid_ts into valid_ts_list
-
-        valid_ts1 = Timestamp()
-        valid_ts1.FromJsonString("2024-01-01T01:00:00Z")
-
-        valid_ts2 = Timestamp()
-        valid_ts2.FromJsonString("2024-01-01T02:00:00Z")
-
-        valid_ts3 = Timestamp()
-        valid_ts3.FromJsonString("2024-01-01T03:00:00Z")
-
-        valid_ts_list = [valid_ts1, valid_ts2, valid_ts3]
-
-        # adding same forecast for different valid_ts into many_forecasts
-
-        for valid_ts in valid_ts_list:
-            full_features_forecasts = weather_pb2.LocationForecast.Forecasts(
-                valid_at_ts=valid_ts, features=feature_forecasts_list
-            )
-            many_forecasts.append(full_features_forecasts)
-
-        some_locations_forecasts = []
-
-        some_creation_ts = Timestamp()
-        some_creation_ts.FromJsonString("2024-01-01T00:00:00Z")
-
-        # adding different locations into locations_list
-        locations = [
-            LocationProto(latitude=42.0, longitude=18.0, country_code="US"),
-            LocationProto(latitude=43.0, longitude=19.0, country_code="CA"),
-        ]
-
-        for location in locations:
-            location_forecast = weather_pb2.LocationForecast(
-                forecasts=many_forecasts,
-                location=location,
-                creation_ts=some_creation_ts,
-            )
-            some_locations_forecasts.append(location_forecast)
-
-        # creating a ReceiveLiveWeatherForecastResponse proto object
-        forecasts_proto = weather_pb2.ReceiveLiveWeatherForecastResponse(
-            location_forecasts=some_locations_forecasts
-        )
-
-        return forecasts_proto
-
-    def test_from_pb(self) -> None:
+    def test_from_pb(
+        self,
+        forecastdata: tuple[
+            weather_pb2.ReceiveLiveWeatherForecastResponse, int, int, int
+        ],
+    ) -> None:
         """Test if the inititlization method from proto works correctly."""
         # creating a Forecasts object
-        forecasts = Forecasts.from_pb(self.forecasts_proto)
+
+        forecasts_proto, num_times, num_locations, num_features = forecastdata
+        forecasts = Forecasts.from_pb(forecasts_proto)
 
         assert forecasts is not None
 
         # forecast is created from the example proto object
 
-    def test_to_ndarray_vlf_with_no_parameters(self) -> None:
+    def test_to_ndarray_vlf_with_no_parameters(
+        self,
+        forecastdata: tuple[
+            weather_pb2.ReceiveLiveWeatherForecastResponse, int, int, int
+        ],
+    ) -> None:
         """Test if the to_ndarray method works correctly when no filter parameters are passed."""
         # create an example Forecasts object
-        forecasts = Forecasts.from_pb(self.forecasts_proto)
+        forecasts_proto, num_times, num_locations, num_features = forecastdata
+        forecasts = Forecasts.from_pb(forecasts_proto)
 
         # checks if output is a numpy array
-        array = forecasts.to_ndarray_vlf_refined()
+        array = forecasts.to_ndarray_vlf()
         assert isinstance(
             array, np.ndarray
         )  # Stellen Sie sicher, dass ein Numpy-Array zurückgegeben wurde
 
         assert array.shape == (
-            self.num_times,
-            self.num_locations,
-            self.num_features,
+            num_times,
+            num_locations,
+            num_features,
         )
         assert array[0, 0, 0] == 100
 
-    def test_to_ndarray_vlf_with_some_parameters(self) -> None:
+    def test_to_ndarray_vlf_with_some_parameters(
+        self,
+        forecastdata: tuple[
+            weather_pb2.ReceiveLiveWeatherForecastResponse, int, int, int
+        ],
+    ) -> None:
         """Test if the to_ndarray method works correctly when some filter parameters are passed."""
         # Erstellen Sie ein Beispiel für ein Forecasts-Objekt
-        forecasts = Forecasts.from_pb(self.forecasts_proto)
+        forecasts_proto, num_times, num_locations, num_features = forecastdata
+        forecasts = Forecasts.from_pb(forecasts_proto)
 
         # Führen Sie die Methode mit optionalen Parametern aus
-        validity_times = [timedelta(hours=6), timedelta(hours=3)]
+        validity_times = [timedelta(hours=2), timedelta(hours=1)]
         locations = [Location(latitude=42.0, longitude=18.0, country_code="US")]
         features = [
             ForecastFeature.V_WIND_COMPONENT_100_METRE,
             ForecastFeature.U_WIND_COMPONENT_100_METRE,
         ]
 
-        array = forecasts.to_ndarray_vlf_refined(
+        array = forecasts.to_ndarray_vlf(
             validity_times=validity_times, locations=locations, features=features
         )
 
@@ -225,13 +244,19 @@ class TestForecasts:
         assert array.shape == (len(validity_times), len(locations), len(features))
         assert array[0, 0, 0] == 200
 
-    def test_to_ndarray_vlf_with_all_parameters(self) -> None:
+    def test_to_ndarray_vlf_with_all_parameters(
+        self,
+        forecastdata: tuple[
+            weather_pb2.ReceiveLiveWeatherForecastResponse, int, int, int
+        ],
+    ) -> None:
         """Test if the to_ndarray method works correctly when all filter parameters are passed."""
         # Erstellen Sie ein Beispiel für ein Forecasts-Objekt
-        forecasts = Forecasts.from_pb(self.forecasts_proto)
+        forecasts_proto, num_times, num_locations, num_features = forecastdata
+        forecasts = Forecasts.from_pb(forecasts_proto)
 
         # Führen Sie die Methode mit optionalen Parametern aus
-        validity_times = [timedelta(hours=3), timedelta(hours=6)]
+        validity_times = [timedelta(hours=3), timedelta(hours=1)]
         locations = [
             Location(latitude=42.0, longitude=18.0, country_code="US"),
             Location(latitude=43.0, longitude=19.0, country_code="CA"),
@@ -240,10 +265,10 @@ class TestForecasts:
         features = [
             ForecastFeature.U_WIND_COMPONENT_100_METRE,
             ForecastFeature.V_WIND_COMPONENT_100_METRE,
-            ForecastFeature.SURFACE_SOLAR_RADIATION_DOWNWARDS,
+            ForecastFeature.SURFACE_SOLAR_RADIATION_DOWNWARDS
         ]
 
-        array = forecasts.to_ndarray_vlf_refined(
+        array = forecasts.to_ndarray_vlf(
             validity_times=validity_times, locations=locations, features=features
         )
 
@@ -251,13 +276,19 @@ class TestForecasts:
         assert isinstance(array, np.ndarray)
         assert array.shape == (len(validity_times), len(locations), len(features))
 
-    def test_to_ndarray_vlf_with_missing_parameters(self) -> None:
-        """Test if the to_ndarray method works correctly when some filter parameters are missing"""
+    def test_to_ndarray_vlf_with_missing_parameters(
+        self,
+        forecastdata: tuple[
+            weather_pb2.ReceiveLiveWeatherForecastResponse, int, int, int
+        ],
+    ) -> None:
+        """Test if the to_ndarray method works correctly when filter parameters are missing."""
         # Erstellen Sie ein Beispiel für ein Forecasts-Objekt
-        forecasts = Forecasts.from_pb(self.forecasts_proto)
+        forecasts_proto, num_times, num_locations, num_features = forecastdata
+        forecasts = Forecasts.from_pb(forecasts_proto)
 
         # Führen Sie die Methode mit optionalen Parametern aus
-        validity_times = [timedelta(hours=3), timedelta(hours=6), timedelta(days=1)]
+        validity_times = [timedelta(hours=1), timedelta(hours=2), timedelta(days=1)]
         locations = [
             Location(latitude=50.0, longitude=18.0, country_code="US"),
             Location(latitude=43.0, longitude=19.0, country_code="CA"),
@@ -270,7 +301,7 @@ class TestForecasts:
             ForecastFeature.SURFACE_NET_SOLAR_RADIATION,
         ]
 
-        array = forecasts.to_ndarray_vlf_refined(
+        array = forecasts.to_ndarray_vlf(
             validity_times=validity_times, locations=locations, features=features
         )
 
