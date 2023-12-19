@@ -1,0 +1,3 @@
+#git+https://github.com/noah-kreutzer-frequenz/frequenz-api-weather@client_noah
+#git+https://github.com/cwasicki/frequenz-api-weather@client_wc
+git+https://github.com/cwasicki/frequenz-api-weather@noah
