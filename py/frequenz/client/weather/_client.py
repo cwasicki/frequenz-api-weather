@@ -40,7 +40,7 @@ class Client:
             Async generator of weather forecast data.
         """
 
-        stream_key = (locations, features)
+        stream_key = tuple(locations + features)
         if stream_key not in self._streams:
             self._streams[stream_key] = GrpcStreamingHelper(
                 f"weather-forecast-{stream_key}",
