@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator, List
 
 from frequenz.api.common.v1.pagination import pagination_params_pb2
 from frequenz.api.weather import weather_pb2, weather_pb2_grpc
@@ -50,7 +50,7 @@ class HistoricalForecastIterator(AsyncIterator[HistoricalForecasts]):
         self.end_ts = timestamp_pb2.Timestamp()
         self.end_ts.FromDatetime(end)
 
-        self.location_forecasts: List[weather_pb2.LocationForecast] = []
+        self.location_forecasts: list[weather_pb2.LocationForecast] = []
         self.page_token: str | None = None
         self.page_size = page_size
 
