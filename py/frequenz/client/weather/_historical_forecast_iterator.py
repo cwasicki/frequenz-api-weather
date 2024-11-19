@@ -3,6 +3,8 @@
 
 """The Historical Forecast Iterator."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import AsyncIterator, List
 
@@ -22,7 +24,7 @@ class HistoricalForecastIterator(AsyncIterator[HistoricalForecasts]):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        stub: weather_pb2_grpc.WeatherForecastServiceStub,
+        stub: weather_pb2_grpc.WeatherForecastServiceAsyncStub,
         locations: list[Location],
         features: list[ForecastFeature],
         start: datetime,
@@ -78,7 +80,7 @@ class HistoricalForecastIterator(AsyncIterator[HistoricalForecasts]):
             pagination_params.page_token = self.page_token
 
         response: weather_pb2.GetHistoricalWeatherForecastResponse = (
-            await self._stub.GetHistoricalWeatherForecast(  # type:ignore
+            await self._stub.GetHistoricalWeatherForecast(
                 weather_pb2.GetHistoricalWeatherForecastRequest(
                     locations=(location.to_pb() for location in self.locations),
                     features=(feature.value for feature in self.features),

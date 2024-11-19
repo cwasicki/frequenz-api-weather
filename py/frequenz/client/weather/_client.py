@@ -3,12 +3,15 @@
 
 """The Weather Forecast API client."""
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from frequenz.api.weather import weather_pb2, weather_pb2_grpc
 from frequenz.channels import Receiver
 from frequenz.client.base.channel import ChannelOptions
 from frequenz.client.base.client import BaseApiClient
+from frequenz.client.base.exception import ClientNotConnected
 from frequenz.client.base.streaming import GrpcStreamBroadcaster
 
 from ._historical_forecast_iterator import HistoricalForecastIterator
@@ -47,6 +50,17 @@ class Client(BaseApiClient[weather_pb2_grpc.WeatherForecastServiceStub]):
                 weather_pb2.ReceiveLiveWeatherForecastResponse, Forecasts
             ],
         ] = {}
+
+    @property
+    def stub(self) -> weather_pb2_grpc.WeatherForecastServiceAsyncStub:
+        """The gRPC stub for the API."""
+        if self.channel is None or self._stub is None:
+            raise ClientNotConnected(server_url=self.server_url, operation="stub")
+        # This type: ignore is needed because we need to cast the sync stub to
+        # the async stub, but we can't use cast because the async stub doesn't
+        # actually exists to the eyes of the interpreter, it only exists for the
+        # type-checker, so it can only be used for type hints.
+        return self._stub  # type: ignore
 
     async def stream_live_forecast(
         self,
