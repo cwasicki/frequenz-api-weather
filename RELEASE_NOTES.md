@@ -6,7 +6,9 @@
 
 ## Upgrading
 
-<!-- Here goes notes on how to upgrade from previous versions, including deprecations and what they should be replaced with -->
+- The minimum required version of `frequenz-client-base` is now `v0.8.0`.
+
+- The `Client` now expects gRPC URLs to be [this format](https://frequenz-floss.github.io/frequenz-client-base-python/latest/reference/frequenz/client/base/channel/#frequenz.client.base.channel.parse_grpc_uri) required by the `BaseApiClient`.
 
 ## New Features
 
