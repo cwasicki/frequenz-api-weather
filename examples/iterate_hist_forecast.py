@@ -13,7 +13,6 @@ import asyncio
 import datetime
 import sys
 
-import grpc.aio as grpcaio
 from frequenz.client.weather._client import Client
 from frequenz.client.weather._types import ForecastData, ForecastFeature, Location
 
@@ -28,7 +27,6 @@ async def main(service_address: str) -> None:
             given in a form of a host followed by a colon and a port.
     """
     client = Client(
-        grpcaio.insecure_channel(service_address),  # or secure channel with credentials
         service_address,
     )
 

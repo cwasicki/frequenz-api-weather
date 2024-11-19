@@ -3,35 +3,64 @@
 
 """The Weather Forecast API client."""
 
+from __future__ import annotations
+
 from datetime import datetime
 
-import grpc
 from frequenz.api.weather import weather_pb2, weather_pb2_grpc
 from frequenz.channels import Receiver
+from frequenz.client.base.channel import ChannelOptions
+from frequenz.client.base.client import BaseApiClient
+from frequenz.client.base.exception import ClientNotConnected
 from frequenz.client.base.streaming import GrpcStreamBroadcaster
 
 from ._historical_forecast_iterator import HistoricalForecastIterator
 from ._types import ForecastFeature, Forecasts, Location
 
 
-class Client:
+class Client(BaseApiClient[weather_pb2_grpc.WeatherForecastServiceStub]):
     """Weather forecast client."""
 
-    def __init__(self, grpc_channel: grpc.aio.Channel, svc_addr: str) -> None:
+    def __init__(
+        self,
+        server_url: str,
+        *,
+        connect: bool = True,
+        channel_defaults: ChannelOptions = ChannelOptions(),
+    ) -> None:
         """Initialize the client.
 
         Args:
-            grpc_channel: gRPC channel to use for communication with the API.
-            svc_addr: Address of the service to connect to.
+            server_url: The URL of the server to connect to.
+            connect: Whether to connect to the server as soon as a client instance is
+                created. If `False`, the client will not connect to the server until
+                [connect()][frequenz.client.base.client.BaseApiClient.connect] is
+                called.
+            channel_defaults: Default options for the gRPC channel.
         """
-        self._svc_addr = svc_addr
-        self._stub = weather_pb2_grpc.WeatherForecastServiceStub(grpc_channel)
+        super().__init__(
+            server_url,
+            weather_pb2_grpc.WeatherForecastServiceStub,
+            connect=connect,
+            channel_defaults=channel_defaults,
+        )
         self._streams: dict[
             tuple[Location | ForecastFeature, ...],
             GrpcStreamBroadcaster[
                 weather_pb2.ReceiveLiveWeatherForecastResponse, Forecasts
             ],
         ] = {}
+
+    @property
+    def stub(self) -> weather_pb2_grpc.WeatherForecastServiceAsyncStub:
+        """The gRPC stub for the API."""
+        if self.channel is None or self._stub is None:
+            raise ClientNotConnected(server_url=self.server_url, operation="stub")
+        # This type: ignore is needed because we need to cast the sync stub to
+        # the async stub, but we can't use cast because the async stub doesn't
+        # actually exists to the eyes of the interpreter, it only exists for the
+        # type-checker, so it can only be used for type hints.
+        return self._stub  # type: ignore
 
     async def stream_live_forecast(
         self,
@@ -52,7 +81,7 @@ class Client:
         if stream_key not in self._streams:
             self._streams[stream_key] = GrpcStreamBroadcaster(
                 f"weather-forecast-{stream_key}",
-                lambda: self._stub.ReceiveLiveWeatherForecast(  # type:ignore
+                lambda: self.stub.ReceiveLiveWeatherForecast(
                     weather_pb2.ReceiveLiveWeatherForecastRequest(
                         locations=(location.to_pb() for location in locations),
                         features=(feature.value for feature in features),
@@ -80,4 +109,4 @@ class Client:
         Returns:
             A channel receiver for weather forecast data.
         """
-        return HistoricalForecastIterator(self._stub, locations, features, start, end)
+        return HistoricalForecastIterator(self.stub, locations, features, start, end)

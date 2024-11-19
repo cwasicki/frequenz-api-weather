@@ -3,8 +3,10 @@
 
 """The Historical Forecast Iterator."""
 
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator, List
 
 from frequenz.api.common.v1.pagination import pagination_params_pb2
 from frequenz.api.weather import weather_pb2, weather_pb2_grpc
@@ -22,7 +24,7 @@ class HistoricalForecastIterator(AsyncIterator[HistoricalForecasts]):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        stub: weather_pb2_grpc.WeatherForecastServiceStub,
+        stub: weather_pb2_grpc.WeatherForecastServiceAsyncStub,
         locations: list[Location],
         features: list[ForecastFeature],
         start: datetime,
@@ -48,7 +50,7 @@ class HistoricalForecastIterator(AsyncIterator[HistoricalForecasts]):
         self.end_ts = timestamp_pb2.Timestamp()
         self.end_ts.FromDatetime(end)
 
-        self.location_forecasts: List[weather_pb2.LocationForecast] = []
+        self.location_forecasts: list[weather_pb2.LocationForecast] = []
         self.page_token: str | None = None
         self.page_size = page_size
 
@@ -78,7 +80,7 @@ class HistoricalForecastIterator(AsyncIterator[HistoricalForecasts]):
             pagination_params.page_token = self.page_token
 
         response: weather_pb2.GetHistoricalWeatherForecastResponse = (
-            await self._stub.GetHistoricalWeatherForecast(  # type:ignore
+            await self._stub.GetHistoricalWeatherForecast(
                 weather_pb2.GetHistoricalWeatherForecastRequest(
                     locations=(location.to_pb() for location in self.locations),
                     features=(feature.value for feature in self.features),

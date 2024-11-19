@@ -36,7 +36,7 @@ dependencies = [
   "frequenz-api-common >= 0.6.0, < 0.7.0",
   "googleapis-common-protos >= 1.56.4, < 2",
   "frequenz-channels >= 1.0.0, < 2",
-  "frequenz-client-base >= 0.6.0, < 0.7",
+  "frequenz-client-base >= 0.8.0, < 0.9",
   "numpy >= 1.24.2, < 2",
   # We can't widen beyond 6 because of protobuf cross-version runtime guarantees
   # https://protobuf.dev/support/cross-version-runtime-guarantee/#major
