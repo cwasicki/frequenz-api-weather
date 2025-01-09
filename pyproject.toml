@@ -48,6 +48,9 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.scripts]
+weather-cli = "frequenz.client.weather.__main__:main"
+
 [[project.authors]]
 name = "Frequenz Energy-as-a-Service GmbH"
 email = "floss@frequenz.com"
