@@ -12,7 +12,9 @@ Copyright © 2024 Frequenz Energy-as-a-Service GmbH
 import asyncio
 import datetime
 import sys
+from datetime import timedelta
 
+from frequenz.client.base.channel import ChannelOptions, KeepAliveOptions, SslOptions
 from frequenz.client.weather._client import Client
 from frequenz.client.weather._types import ForecastData, ForecastFeature, Location
 
@@ -28,6 +30,16 @@ async def main(service_address: str) -> None:
     """
     client = Client(
         service_address,
+        channel_defaults=ChannelOptions(
+            ssl=SslOptions(
+                enabled=False,
+            ),
+            keep_alive=KeepAliveOptions(
+                enabled=True,
+                timeout=timedelta(minutes=5),
+                interval=timedelta(seconds=20),
+            ),
+        ),
     )
 
     features = [
